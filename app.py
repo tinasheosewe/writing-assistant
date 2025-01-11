@@ -158,7 +158,7 @@ async def generate_synopsis(data: GenerateSynopsisRequest):
 
     task = "generate a synopsis for a coherent document given inputs"
     system_prompt = "You are a helpful assistant tasked with generating a synopsis using the given inputs."
-    messages = create_messages( system_prompt, task=task, data=data.model_dump() )
+    messages = create_messages( system_prompt, task=task, data=data.model_dump(exclude='creativity_level') )
 
     class SynopsisFormat(BaseModel):
         synopsis: str = Field(..., description="The generated synopsis.")
@@ -188,7 +188,7 @@ async def synopsis_to_outline(data: ConvertSynopsisToOutlineRequest):
         "with a target word count suitable for the document length. "
         "Ensure clarity and logical flow for the specified document type."
     )
-    messages = create_messages( system_prompt, task=task, data=data.model_dump() )
+    messages = create_messages( system_prompt, task=task, data=data.model_dump(exclude='creativity_level') )
 
     class Section(BaseModel):
         header: str = Field(..., description="The name of the section.")
