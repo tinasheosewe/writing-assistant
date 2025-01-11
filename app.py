@@ -86,7 +86,6 @@ async def autocomplete(data: AutocompleteRequest):
         response = client.chat.completions.create(
             model="gpt-4",
             messages=messages,
-            max_tokens=data.word_count,
             temperature=data.creativity_level
         )
         logging.debug("Received response from OpenAI API: %s", response)
