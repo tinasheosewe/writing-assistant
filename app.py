@@ -158,16 +158,16 @@ async def generate_synopsis(data: GenerateSynopsisRequest):
 
     task = "generate a synopsis for a coherent document given inputs"
     system_prompt = "You are a helpful assistant tasked with generating a synopsis using the given inputs."
-    messages = create_messages( system_prompt, task=task, data=data.model_dump(),  )
+    messages = create_messages( system_prompt, task=task, data=data.model_dump() )
 
     class SynopsisFormat(BaseModel):
         synopsis: str = Field(..., description="The generated synopsis.")
 
     return json_repair.loads(send_openai_request(messages, data.creativity_level, SynopsisFormat))["synopsis"]
     
-# Convert To Outline endpoint
-@app.post("/convert_to_outline", summary="Convert Synopsis to Outline with OpenAI API")
-async def convert_to_outline(data: ConvertSynopsisToOutlineRequest):
+# Convert Synopsis To Outline endpoint
+@app.post("/synopsis_to_outline", summary="Convert Synopsis to Outline with OpenAI API")
+async def synopsis_to_outline(data: ConvertSynopsisToOutlineRequest):
     logging.info("Received request with data: %s", data)
     
     if not (0 <= data.creativity_level <= 1):
@@ -186,7 +186,7 @@ async def convert_to_outline(data: ConvertSynopsisToOutlineRequest):
          " Ensure clarity and logical flow for the specified document type. "
          "Include word count in each section suitable for the document length."
     )
-    messages = create_messages( system_prompt, task=task, data=data.model_dump(),  )
+    messages = create_messages( system_prompt, task=task, data=data.model_dump() )
 
     class Section(BaseModel):
         header: str = Field(..., description="The name of the section (e.g., Title, Introduction, Sections X, Conclusion).")
