@@ -67,7 +67,7 @@ class GenerateSynopsisRequest(BaseModel):
 
 class ConvertSynopsisToOutlineRequest(BaseModel):
     document_type: str = ""
-    document_length: int = 0.5 # The desired length of the document in pages
+    document_length_in_pages: int = 0.5 # The desired length of the document in pages
     outline_granularity: OutlineGranularity = OutlineGranularity.DETAILED
     audience: str = ""
     key_focus_areas: List[str] = []  # Key points to emphasize in the outline
@@ -180,17 +180,19 @@ async def synopsis_to_outline(data: ConvertSynopsisToOutlineRequest):
        f"You are a helpful assistant tasked with converting synopses into detailed {data.document_type} outlines. "
         "Tailor the outline to the specified document type, audience, and key focus areas."
     )
+
     task = (
         "Structure the outline with sections corresponding to title, introduction (overview and purpose), body sections "
-        "(key headings with subheadings and bullet points), and conclusion (summary or closing message)."
-         " Ensure clarity and logical flow for the specified document type. "
-         "Include word count in each section suitable for the document length."
+        "(each represented as a separate section with a heading, subheadings, and key points), and conclusion "
+        "(summary or closing message). Each section should be represented as a distinct object in the output, "
+        "with a target word count suitable for the document length. "
+        "Ensure clarity and logical flow for the specified document type."
     )
     messages = create_messages( system_prompt, task=task, data=data.model_dump() )
 
     class Section(BaseModel):
         header: str = Field(..., description="The name of the section.")
-        word_count: int = Field(..., description="The recommended word count for the section.")
+        target_word_count: int = Field(..., description="The recommended word count for the section.")
         content: str = Field(..., description="The detailed content of the section.")
 
     class OutlineResponse(BaseModel):
