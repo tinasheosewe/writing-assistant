@@ -6,7 +6,8 @@ from typing import Any, Dict, List
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Body
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+import json_repair
+from pydantic import BaseModel, Field, RootModel
 from openai import OpenAI
 import random
 from fastapi.openapi.utils import get_openapi
@@ -30,6 +31,15 @@ class CompletionLevel(str, Enum):
     SENTENCE = "sentence"
     PARAGRAPH = "paragraph"
     DOCUMENT = "document"
+
+class OutlineGranularity(str, Enum):
+    PARAGRAPH = "paragraph"
+    PAGE = "page"
+    CHAPTER = "chapter"
+    SECTION = "section"
+
+    DETAILED = "detailed"
+    HIGH_LEVEL = "high-level"
 
 # Models for request validation
 class AutocompleteRequest(BaseModel):
@@ -55,6 +65,15 @@ class GenerateSynopsisRequest(BaseModel):
     document_type: str = ''
     creativity_level: float = 0.7
 
+class ConvertSynopsisToOutlineRequest(BaseModel):
+    document_type: str = ""
+    document_length: int = 0.5 # The desired length of the document in pages
+    outline_granularity: OutlineGranularity = OutlineGranularity.DETAILED
+    audience: str = ""
+    key_focus_areas: List[str] = []  # Key points to emphasize in the outline
+    creativity_level: float = 0.7
+    synopsis: str = ""
+
 def create_messages( system_prompt: str, data: Dict[str, Any] = None, task: str = None, structured_payload: Dict[str, Any] = None) -> list:
     if (task is None or data is None) and structured_payload is None:
         raise ValueError("Either 'structured_payload' or both 'task' and 'system_prompt' must be provided.")
@@ -77,16 +96,32 @@ def create_messages( system_prompt: str, data: Dict[str, Any] = None, task: str 
 
     return messages
 
+def send_openai_request(messages: list, creativity_level: float, response_format: Dict[str, Any]) -> dict:
+    try:
+        logging.debug("Sending request to OpenAI API")
+        response = client.beta.chat.completions.parse(
+            model="gpt-4o-mini",
+            messages=messages,
+            temperature=creativity_level,
+            response_format=response_format,
+        )
+        logging.debug("Received response from OpenAI API: %s", response)
+        output = response.choices[0].message.content.strip()
+        return output
+    except Exception as e:
+        logging.error("Error during OpenAI API request: %s", str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Autocomplete endpoint
 @app.post("/autocomplete", summary="Autocomplete with OpenAI API")
 async def autocomplete(data: AutocompleteRequest):
     logging.info("Received request with data: %s", data)
     
-    if not data.partial_input and not data.context and not data.story_outline:
-        raise HTTPException(status_code=400, detail="At least one of 'partial_input', 'context', or 'story_outline' is required.")
-    
     if not (0 <= data.creativity_level <= 1):
         raise HTTPException(status_code=400, detail="Creativity level must be between 0 and 1.")
+
+    if not data.partial_input and not data.context and not data.story_outline:
+        raise HTTPException(status_code=400, detail="At least one of 'partial_input', 'context', or 'story_outline' is required.")
 
     system_prompt = (
         "You are a helpful assistant tasked with text completion. "
@@ -107,21 +142,13 @@ async def autocomplete(data: AutocompleteRequest):
     }
     messages = create_messages( system_prompt, structured_payload=structured_payload )
 
-    try:
-        logging.debug("Sending request to OpenAI API")
-        response = client.chat.completions.create(
-            model="gpt-4",
-            messages=messages,
-            temperature=data.creativity_level
-        )
-        logging.debug("Received response from OpenAI API: %s", response)
-        completion = response.choices[0].message.content.strip()
-        return {"completion": completion}
-    except Exception as e:
-        logging.error("Error during OpenAI API request: %s", str(e))
-        raise HTTPException(status_code=500, detail=str(e))
 
-# Generate Random Story endpoint
+    class AutoCompleteFormat(BaseModel):
+        completion: str = Field(..., description="The autcompleted text.")
+
+    return json_repair.loads(send_openai_request(messages, data.creativity_level, AutoCompleteFormat))["synopsis"]
+
+# Generate Story endpoint
 @app.post("/generate_synopsis", summary="Generate Synopsis with OpenAI API")
 async def generate_synopsis(data: GenerateSynopsisRequest):
     logging.info("Received request with data: %s", data)
@@ -133,19 +160,43 @@ async def generate_synopsis(data: GenerateSynopsisRequest):
     system_prompt = "You are a helpful assistant tasked with generating a synopsis using the given inputs."
     messages = create_messages( system_prompt, task=task, data=data.model_dump(),  )
 
-    try:
-        logging.debug("Sending request to OpenAI API")
-        response = client.chat.completions.create(
-            model="gpt-4",
-            messages=messages,
-            temperature=data.creativity_level
-        )
-        logging.debug("Received response from OpenAI API: %s", response)
-        completion = response.choices[0].message.content.strip()
-        return {"completion": completion}
-    except Exception as e:
-        logging.error("Error during OpenAI API request: %s", str(e))
-        raise HTTPException(status_code=500, detail=str(e))
+    class SynopsisFormat(BaseModel):
+        synopsis: str = Field(..., description="The generated synopsis.")
+
+    return json_repair.loads(send_openai_request(messages, data.creativity_level, SynopsisFormat))["synopsis"]
+    
+# Convert To Outline endpoint
+@app.post("/convert_to_outline", summary="Convert Synopsis to Outline with OpenAI API")
+async def convert_to_outline(data: ConvertSynopsisToOutlineRequest):
+    logging.info("Received request with data: %s", data)
+    
+    if not (0 <= data.creativity_level <= 1):
+        raise HTTPException(status_code=400, detail="Creativity level must be between 0 and 1.")
+
+    if not data.document_type:
+        raise HTTPException(status_code=400, detail="Document type is required.")
+
+    system_prompt = (
+       f"You are a helpful assistant tasked with converting synopses into detailed {data.document_type} outlines. "
+        "Tailor the outline to the specified document type, audience, and key focus areas."
+    )
+    task = (
+        "Structure the outline with these sections: Title, Introduction (overview and purpose), Main Sections "
+        "(key headings with subheadings and bullet points), and Conclusion (summary or closing message)."
+         " Ensure clarity and logical flow for the specified document type. "
+         "Include word count in each section suitable for the document length."
+    )
+    messages = create_messages( system_prompt, task=task, data=data.model_dump(),  )
+
+    class Section(BaseModel):
+        header: str = Field(..., description="The name of the section (e.g., Title, Introduction, Sections X, Conclusion).")
+        word_count: int = Field(..., description="The recommended word count for the section.")
+        content: str = Field(..., description="The detailed content of the section.")
+
+    class OutlineResponse(BaseModel):
+        sections: List[Section] = Field(..., description="A list of sections representing the outline.")
+
+    return json_repair.loads(send_openai_request(messages, data.creativity_level, OutlineResponse))["sections"]
 
 # Custom OpenAPI schema (if needed)
 def custom_openapi():
