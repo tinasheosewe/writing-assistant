@@ -181,15 +181,15 @@ async def synopsis_to_outline(data: ConvertSynopsisToOutlineRequest):
         "Tailor the outline to the specified document type, audience, and key focus areas."
     )
     task = (
-        "Structure the outline with these sections: Title, Introduction (overview and purpose), Main Sections "
-        "(key headings with subheadings and bullet points), and Conclusion (summary or closing message)."
+        "Structure the outline with sections corresponding to title, introduction (overview and purpose), body sections "
+        "(key headings with subheadings and bullet points), and conclusion (summary or closing message)."
          " Ensure clarity and logical flow for the specified document type. "
          "Include word count in each section suitable for the document length."
     )
     messages = create_messages( system_prompt, task=task, data=data.model_dump() )
 
     class Section(BaseModel):
-        header: str = Field(..., description="The name of the section (e.g., Title, Introduction, Sections X, Conclusion).")
+        header: str = Field(..., description="The name of the section.")
         word_count: int = Field(..., description="The recommended word count for the section.")
         content: str = Field(..., description="The detailed content of the section.")
 
