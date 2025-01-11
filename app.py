@@ -41,8 +41,33 @@ class OutlineGranularity(str, Enum):
     DETAILED = "detailed"
     HIGH_LEVEL = "high-level"
 
+class Tone(str, Enum):
+    FORMAL = "formal"
+    INFORMAL = "informal"
+    NEUTRAL = "neutral"
+
+class WritingStyle(str, Enum):
+    DESCRIPTIVE = "descriptive"
+    NARRATIVE = "narrative"
+    EXPOSITORY = "expository"
+    PERSUASIVE = "persuasive"
+    CREATIVE = "creative"
+
+class WritingLevel(str, Enum):
+    ELEMENTARY = "elementary"
+    MIDDLE_SCHOOL = "middle school"
+    HIGH_SCHOOL = "high school"
+    COLLEGE = "college"
+    GRADUATE = "graduate"
+    PROFESSIONAL = "professional"
+
+class OutputText(BaseModel):
+    tone: Tone = Tone.NEUTRAL
+    writing_style: WritingStyle = WritingStyle.DESCRIPTIVE
+    writing_level: WritingLevel = WritingLevel.COLLEGE
+
 # Models for request validation
-class AutocompleteRequest(BaseModel):
+class AutocompleteRequest(OutputText):
     context: list[str] = []
     partial_input: str = ""
     task: str = "Complete the text."
@@ -51,7 +76,7 @@ class AutocompleteRequest(BaseModel):
     story_outline: list[str] = []
     creativity_level: float = 0.7
 
-class GenerateSynopsisRequest(BaseModel):
+class GenerateSynopsisRequest(OutputText):
     genre: str = "" 
     target_audience: str = "" 
     setting: str = "" 
@@ -65,7 +90,7 @@ class GenerateSynopsisRequest(BaseModel):
     document_type: str = ''
     creativity_level: float = 0.7
 
-class ConvertSynopsisToOutlineRequest(BaseModel):
+class ConvertSynopsisToOutlineRequest(BaseModel): # This should NOT inherit from OutputText
     document_type: str = ""
     document_length_in_pages: int = 0.5 # The desired length of the document in pages
     outline_granularity: OutlineGranularity = OutlineGranularity.DETAILED
@@ -136,6 +161,9 @@ async def autocomplete(data: AutocompleteRequest):
             "completion_level": data.completion_level,
             "partial_input": data.partial_input,
             "story_outline": data.story_outline,
+            "tone": data.tone,
+            "writing_style": data.writing_style,
+            "writing_level": data.writing_level,
             "word_count": data.word_count
         },
         "retrieved_context": data.context
