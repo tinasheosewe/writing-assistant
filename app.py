@@ -2,6 +2,7 @@ from enum import Enum
 import json
 import logging
 import os
+from typing import Any, Dict, List
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Body
 from fastapi.responses import JSONResponse
@@ -37,11 +38,44 @@ class AutocompleteRequest(BaseModel):
     task: str = "Complete the text."
     word_count: int = 20
     completion_level: CompletionLevel = CompletionLevel.SENTENCE
-    creativity_level: float = 0.7
     story_outline: list[str] = []
+    creativity_level: float = 0.7
 
-class GenerateRandomStoryRequest(BaseModel):
-    prompt: str = "Once upon a time"
+class GenerateSynopsisRequest(BaseModel):
+    genre: str = "" 
+    target_audience: str = "" 
+    setting: str = "" 
+    main_characters: List[str] = [] 
+    central_conflict_or_goal: str = "" 
+    themes: List[str] = [] 
+    plot_structure_or_key_events: List[str] = [] 
+    tone: str = "" 
+    perspective: str = "" 
+    unique_elements: List[str] = [] 
+    document_type: str = ''
+    creativity_level: float = 0.7
+
+def create_messages( system_prompt: str, data: Dict[str, Any] = None, task: str = None, structured_payload: Dict[str, Any] = None) -> list:
+    if (task is None or data is None) and structured_payload is None:
+        raise ValueError("Either 'structured_payload' or both 'task' and 'system_prompt' must be provided.")
+    
+    if structured_payload is None:
+        structured_payload = {
+            "task": task,
+            "user_input": {k: v for k, v in data.items()},
+        }
+
+    logging.debug("Structured payload: %s", structured_payload)
+
+    messages = [
+        {
+            "role": "system",
+            "content": system_prompt
+        },
+        {"role": "user", "content": json.dumps(structured_payload)}
+    ]
+
+    return messages
 
 # Autocomplete endpoint
 @app.post("/autocomplete", summary="Autocomplete with OpenAI API")
@@ -54,6 +88,12 @@ async def autocomplete(data: AutocompleteRequest):
     if not (0 <= data.creativity_level <= 1):
         raise HTTPException(status_code=400, detail="Creativity level must be between 0 and 1.")
 
+    system_prompt = (
+        "You are a helpful assistant tasked with text completion. "
+        "Use the given inputs, such as partial input, story outline, or context, to generate a coherent completion. "
+        "Ensure the completion adheres to the specified level (e.g., sentence, paragraph, story) and targets the "
+        "provided word count as a general guideline for length."
+    )
     structured_payload = {
         "task": "autocomplete",
         "user_input": {
@@ -65,21 +105,7 @@ async def autocomplete(data: AutocompleteRequest):
         },
         "retrieved_context": data.context
     }
-
-    logging.debug("Structured payload: %s", structured_payload)
-
-    messages = [
-        {
-            "role": "system",
-            "content": (
-                "You are a helpful assistant tasked with text completion. "
-                "Use the given inputs, such as partial input, story outline, or context, to generate a coherent completion. "
-                "Ensure the completion adheres to the specified level (e.g., sentence, paragraph, story) and targets the "
-                "provided word count as a general guideline for length."
-            )
-        },
-        {"role": "user", "content": json.dumps(structured_payload)}
-    ]
+    messages = create_messages( system_prompt, structured_payload=structured_payload )
 
     try:
         logging.debug("Sending request to OpenAI API")
@@ -96,10 +122,30 @@ async def autocomplete(data: AutocompleteRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 # Generate Random Story endpoint
-@app.post("/generate_random_story", summary="Generate Random Story")
-async def generate_random_story(data: GenerateRandomStoryRequest):
-    story = f"{data.prompt}... {random.choice(['and they lived happily ever after.', 'it was a dark and stormy night.', 'the adventure had just begun.'])}"
-    return {"story": story}
+@app.post("/generate_synopsis", summary="Generate Synopsis with OpenAI API")
+async def generate_synopsis(data: GenerateSynopsisRequest):
+    logging.info("Received request with data: %s", data)
+    
+    if not (0 <= data.creativity_level <= 1):
+        raise HTTPException(status_code=400, detail="Creativity level must be between 0 and 1.")
+
+    task = "generate a synopsis for a coherent document given inputs"
+    system_prompt = "You are a helpful assistant tasked with generating a synopsis using the given inputs."
+    messages = create_messages( system_prompt, task=task, data=data.model_dump(),  )
+
+    try:
+        logging.debug("Sending request to OpenAI API")
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=messages,
+            temperature=data.creativity_level
+        )
+        logging.debug("Received response from OpenAI API: %s", response)
+        completion = response.choices[0].message.content.strip()
+        return {"completion": completion}
+    except Exception as e:
+        logging.error("Error during OpenAI API request: %s", str(e))
+        raise HTTPException(status_code=500, detail=str(e))
 
 # Custom OpenAPI schema (if needed)
 def custom_openapi():
