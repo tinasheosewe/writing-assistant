@@ -7,6 +7,10 @@ import json_repair
 
 router = APIRouter()
 
+class DocumentResponse(BaseModel):
+    header: str = Field(..., description="The name of the section.")
+    content: str = Field(..., description="The detailed content of the section.")
+
 @router.post("/outline_to_document", summary="Convert Outline to Document with OpenAI API")
 async def outline_to_document(data: ConvertOutlineToDocumentRequest):
     logging.info("Received request with data: %s", data)
@@ -27,10 +31,6 @@ async def outline_to_document(data: ConvertOutlineToDocumentRequest):
         "Ensure the content is approximately {target_word_count} words and aligns with the {document_type} format. "
         "Use the content of the previous sections for context and maintain logical flow."
     )
-
-    class DocumentResponse(BaseModel):
-        header: str = Field(..., description="The name of the section.")
-        content: str = Field(..., description="The detailed content of the section.")
 
     # Process each section sequentially
     for section in data.outline:

@@ -7,6 +7,9 @@ import json_repair
 
 router = APIRouter()
 
+class SynopsisResponse(BaseModel):
+    synopsis: str = Field(..., description="The generated synopsis.")
+
 @router.post("/generate_synopsis", summary="Generate Synopsis with OpenAI API")
 async def generate_synopsis(data: GenerateSynopsisRequest):
     logging.info("Received request with data: %s", data)
@@ -18,7 +21,4 @@ async def generate_synopsis(data: GenerateSynopsisRequest):
     system_prompt = "You are a helpful assistant tasked with generating a synopsis using the given inputs."
     messages = create_messages( system_prompt, task=task, data=data.model_dump(exclude='creativity_level') )
 
-    class SynopsisFormat(BaseModel):
-        synopsis: str = Field(..., description="The generated synopsis.")
-
-    return json_repair.loads(send_openai_request(messages, data.creativity_level, SynopsisFormat))["synopsis"]
+    return json_repair.loads(send_openai_request(messages, data.creativity_level, SynopsisResponse))["synopsis"]

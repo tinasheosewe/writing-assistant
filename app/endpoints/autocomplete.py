@@ -7,6 +7,9 @@ import json_repair
 
 router = APIRouter()
 
+class AutoCompleteResponse(BaseModel):
+    completion: str = Field(..., description="The autocompleted text.")
+
 @router.post("/autocomplete", summary="Autocomplete with OpenAI API")
 async def autocomplete(data: AutocompleteRequest):
     logging.info("Received request with data: %s", data)
@@ -40,8 +43,4 @@ async def autocomplete(data: AutocompleteRequest):
     }
     messages = create_messages( system_prompt, structured_payload=structured_payload )
 
-
-    class AutoCompleteFormat(BaseModel):
-        completion: str = Field(..., description="The autocompleted text.")
-
-    return json_repair.loads(send_openai_request(messages, data.creativity_level, AutoCompleteFormat))
+    return json_repair.loads(send_openai_request(messages, data.creativity_level, AutoCompleteResponse))

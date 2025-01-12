@@ -8,6 +8,18 @@ import json_repair
 
 router = APIRouter()
 
+class Section(BaseModel):
+    header: str = Field(..., description="The name of the section.")
+    target_word_count: int = Field(..., description="The recommended word count for the section.")
+    content: str = Field(..., description="The detailed content of the section.")
+
+class OutlineMetadata(BaseModel):
+    title: str = Field(..., description="The title of the document.")
+
+class OutlineResponse(BaseModel):
+    sections: List[Section] = Field(..., description="A list of sections representing the outline.")
+    metadata: OutlineMetadata = Field(..., description="Metadata for the outline.")
+
 @router.post("/synopsis_to_outline", summary="Convert Synopsis to Outline with OpenAI API")
 async def synopsis_to_outline(data: ConvertSynopsisToOutlineRequest):
     logging.info("Received request with data: %s", data)
@@ -33,17 +45,5 @@ async def synopsis_to_outline(data: ConvertSynopsisToOutlineRequest):
     modified_data["target_word_count"] = data.document_length_in_pages * 500  # Assuming 500 words per page
 
     messages = create_messages( system_prompt, task=task, data=modified_data )
-
-    class Section(BaseModel):
-        header: str = Field(..., description="The name of the section.")
-        target_word_count: int = Field(..., description="The recommended word count for the section.")
-        content: str = Field(..., description="The detailed content of the section.")
-
-    class OutlineMetadata(BaseModel):
-        title: str = Field(..., description="The title of the document.")
-
-    class OutlineResponse(BaseModel):
-        sections: List[Section] = Field(..., description="A list of sections representing the outline.")
-        metadata: OutlineMetadata = Field(..., description="Metadata for the outline.")
 
     return json_repair.loads(send_openai_request(messages, data.creativity_level, OutlineResponse))
