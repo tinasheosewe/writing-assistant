@@ -43,4 +43,4 @@ async def autocomplete(data: AutocompleteRequest):
     }
     messages = create_messages( system_prompt, structured_payload=structured_payload )
 
-    return json_repair.loads(send_openai_request(messages, data.creativity_level, AutoCompleteResponse))
+    return json_repair.loads(send_openai_request(messages, data.creativity_level, AutoCompleteResponse))["completion"]

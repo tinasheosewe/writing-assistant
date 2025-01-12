@@ -12,7 +12,7 @@ if not os.getenv("OPENAI_API_KEY"):
     raise ValueError("OPENAI_API_KEY environment variable is not set.")
 
 from fastapi import FastAPI
-from .endpoints import autocomplete, generate_synopsis, synopsis_to_outline, outline_to_document
+from .endpoints import autocomplete, generate_synopsis, synopsis_to_outline, outline_to_document, edit_text
 from .utils import custom_openapi
 
 # FastAPI app initialization
@@ -23,6 +23,7 @@ app.include_router(autocomplete.router)
 app.include_router(generate_synopsis.router)
 app.include_router(synopsis_to_outline.router)
 app.include_router(outline_to_document.router)
+app.include_router(edit_text.router)
 
 # Custom OpenAPI schema (if needed)
 app.openapi = lambda: custom_openapi(app)

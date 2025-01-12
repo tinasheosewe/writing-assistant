@@ -52,3 +52,10 @@ class ConvertOutlineToDocumentRequest(OutputText):
     target_audience: str = ""
     outline: list[OutlineSection] = []
     previous_content: list[DocumentSection] = []
+
+class EditSubstringRequest(OutputText):
+    outline: list[OutlineSection] = []
+    text_to_edit: str = ""
+    preceding_text: str = ""
+    subsequent_text: str = ""
+    edit_instructions: str = ""
