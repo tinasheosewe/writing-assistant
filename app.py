@@ -228,7 +228,6 @@ async def synopsis_to_outline(data: ConvertSynopsisToOutlineRequest):
         "Structure the outline with multiple distinct sections, each represented as a separate object with its "
         "own heading, details, and target word count appropriate for the document length. "
         "Ensure that each section maintains clarity, logical flow, and aligns with the specified document type."
-        "Include a title in the metadata for the outline."
     )
 
     messages = create_messages( system_prompt, task=task, data=data.model_dump(exclude='creativity_level') )
@@ -245,7 +244,7 @@ async def synopsis_to_outline(data: ConvertSynopsisToOutlineRequest):
         sections: List[Section] = Field(..., description="A list of sections representing the outline.")
         metadata: OutlineMetadata = Field(..., description="Metadata for the outline.")
 
-    return json_repair.loads(send_openai_request(messages, data.creativity_level, OutlineResponse))["sections"]
+    return json_repair.loads(send_openai_request(messages, data.creativity_level, OutlineResponse))
 
 @app.post("/outline_to_document", summary="Convert Outline to Document with OpenAI API")
 async def outline_to_document(data: ConvertOutlineToDocumentRequest):
