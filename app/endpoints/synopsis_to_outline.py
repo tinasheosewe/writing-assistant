@@ -20,7 +20,7 @@ class OutlineResponse(BaseModel):
     sections: List[Section] = Field(..., description="A list of sections representing the outline.")
     metadata: OutlineMetadata = Field(..., description="Metadata for the outline.")
 
-@router.post("/synopsis_to_outline", summary="Convert Synopsis to Outline with OpenAI API")
+@router.post("/synopsis_to_outline", summary="Convert a synopsis to a detailed document outline.")
 async def synopsis_to_outline(data: ConvertSynopsisToOutlineRequest):
     logging.info("Received request with data: %s", data)
     

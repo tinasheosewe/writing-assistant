@@ -10,7 +10,7 @@ router = APIRouter()
 class SynopsisResponse(BaseModel):
     synopsis: str = Field(..., description="The generated synopsis.")
 
-@router.post("/generate_synopsis", summary="Generate Synopsis with OpenAI API")
+@router.post("/generate_synopsis", summary="Generate a synopsis for a hypothetical document based on the provided inputs.")
 async def generate_synopsis(data: GenerateSynopsisRequest):
     logging.info("Received request with data: %s", data)
     

@@ -10,7 +10,7 @@ router = APIRouter()
 class AutoCompleteResponse(BaseModel):
     completion: str = Field(..., description="The autocompleted text.")
 
-@router.post("/autocomplete", summary="Autocomplete with OpenAI API")
+@router.post("/autocomplete", summary="Complete a given text based on the provided context and inputs.")
 async def autocomplete(data: AutocompleteRequest):
     logging.info("Received request with data: %s", data)
     

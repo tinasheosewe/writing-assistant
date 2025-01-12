@@ -11,7 +11,7 @@ class DocumentResponse(BaseModel):
     header: str = Field(..., description="The name of the section.")
     content: str = Field(..., description="The detailed content of the section.")
 
-@router.post("/outline_to_document", summary="Convert Outline to Document with OpenAI API")
+@router.post("/outline_to_document", summary="Convert an outline to a detailed document.")
 async def outline_to_document(data: ConvertOutlineToDocumentRequest):
     logging.info("Received request with data: %s", data)
 
