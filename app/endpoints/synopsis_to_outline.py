@@ -29,7 +29,10 @@ async def synopsis_to_outline(data: ConvertSynopsisToOutlineRequest):
         "Ensure that each section maintains clarity, logical flow, and aligns with the specified document type."
     )
 
-    messages = create_messages( system_prompt, task=task, data=data.model_dump(exclude='creativity_level') )
+    modified_data = data.model_dump(exclude='creativity_level')
+    modified_data["target_word_count"] = data.document_length_in_pages * 500  # Assuming 500 words per page
+
+    messages = create_messages( system_prompt, task=task, data=modified_data )
 
     class Section(BaseModel):
         header: str = Field(..., description="The name of the section.")
