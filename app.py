@@ -100,7 +100,7 @@ class GenerateSynopsisRequest(OutputText):
 
 class ConvertSynopsisToOutlineRequest(BaseModel): # This should NOT inherit from OutputText
     document_type: str = ""
-    document_length_in_pages: int = 0.5 # The desired length of the document in pages
+    document_length_in_pages: float = 0.5 # The desired length of the document in pages
     outline_granularity: OutlineGranularity = OutlineGranularity.DETAILED
     audience: str = ""
     key_focus_areas: List[str] = []  # Key points to emphasize in the outline
