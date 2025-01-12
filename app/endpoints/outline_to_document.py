@@ -1,8 +1,8 @@
 import logging
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
-from ..models import ConvertOutlineToDocumentRequest
-from ..utils import create_messages, send_openai_request
+from app.models import ConvertOutlineToDocumentRequest
+from app.utils import create_messages, send_openai_request
 import json_repair
 
 router = APIRouter()

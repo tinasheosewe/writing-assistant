@@ -1,7 +1,6 @@
 from fastapi import APIRouter
 import json_repair
 from pydantic import BaseModel, Field
-
 from app.models import EditSubstringRequest
 from app.utils import create_messages, send_openai_request
 
