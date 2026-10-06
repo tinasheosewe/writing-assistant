@@ -52,9 +52,9 @@ def custom_openapi(app):
     if app.openapi_schema:
         return app.openapi_schema
     openapi_schema = get_openapi(
-        title="My FastAPI API",
+        title="Writing Assistant",
         version="1.0.0",
-        description="An example API converted from Flask to FastAPI",
+        description="Endpoints for drafting a document in stages: synopsis, outline, section text, autocomplete and edits.",
         routes=app.routes,
     )
     app.openapi_schema = openapi_schema

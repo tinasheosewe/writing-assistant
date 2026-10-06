@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+# 1.40 added the structured-output parse call that app/utils.py uses; releases
+# before 1.55.3 cannot create a client alongside httpx 0.28 or later.
+openai>=1.55.3
+pydantic>=2
+python-dotenv
+json-repair
